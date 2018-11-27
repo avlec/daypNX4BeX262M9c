@@ -4,3 +4,4 @@ libs/*
 testImage.IMA
 \#*
 \.#*
+.vscode/

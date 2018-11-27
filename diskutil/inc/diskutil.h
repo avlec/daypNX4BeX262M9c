@@ -103,7 +103,25 @@ typedef struct du_file {
   char * creation_time;
 } du_file;
 
-#define DU_FILE_INITIALIZER {
+#define DU_FILE_INITIALIZER { .name = NULL, .path = NULL, .type = 'X', .dir_content = { .files = NULL, .count = 0 }, .bytes = 0, .creation_date = NULL, .creation_time = NULL }
+
+typedef struct QNode {
+	struct QNode * next;
+	struct QNode * prev;
+	struct du_file * file;
+} QNode;
+
+typedef struct Queue {
+	struct QNode * head;
+	struct QNode * tail;
+	unsigned int length;
+} Queue;
+
+#define QUEUE_INITIALIZER (Queue) { .head = NULL, .tail = NULL, .length = 0 }
+
+int q_push(Queue * queue, du_file * file);
+du_file * p_pop(Queue * queue);
+du_file * q_peek(Queue * queue);
 
 // Function definitions.
 diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
