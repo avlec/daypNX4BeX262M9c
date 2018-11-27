@@ -1,6 +1,8 @@
 #ifndef DISKUTIL_H
 #define DISKUTIL_H
 
+#include <stdint.h>
+
 /* This structure allows for a direct read raw data from the disk into memory
  * then copy over to an actual storage in diskinfo_fat12
  */
@@ -28,8 +30,7 @@ typedef struct bootsector_raw_fat12 {
 } bootsector_raw_fat12;
 
 /*
- * This strucutre contains all of the information that was found
- * inside the bootsector of the disk.
+ * This strucutre contains all of the information that was found * inside the bootsector of the disk.
  * 
  * TODO Add conveniency metrics about the disk.
  */
@@ -80,7 +81,7 @@ typedef struct du_file {
 	char * location;
 	char type;
 	struct du_file * dir_content; // Null if type is 'D'
-	size_t bytes;
+	unsigned int bytes;
 	// Creation date
 	// Creation time
 } du_file;
@@ -88,8 +89,12 @@ typedef struct du_file {
 
 diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
 
-void print_diskinfo_fat12(diskinfo_fat12 diskinfo);
+void print_diskinfo_fat12(disk_fat12 * disk);
 
-void print_me();
+disk_fat12 new_disk_fat12(char * file_location);
+
+int diskinfo_freesize_fat12(disk_fat12 * disk);
+int diskinfo_totalfilecount_fat12(disk_fat12 * disk);
+int diskinfo_numfatcopies_fat12(disk_fat12 * disk);
 
 #endif
