@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
-/* This structure allows for a direct read raw data from the disk into memory
+/** 
+ * This structure allows for a direct read raw data
+ * from the disk into memory
  * then copy over to an actual storage in diskinfo_fat12
  */
 typedef struct bootsector_raw_fat12 {
@@ -29,7 +31,7 @@ typedef struct bootsector_raw_fat12 {
   // Rest is padding for sector
 } bootsector_raw_fat12;
 
-/*
+/**
  * This strucutre contains all of the information that was found * inside the bootsector of the disk.
  * 
  * TODO Add conveniency metrics about the disk.
@@ -53,46 +55,60 @@ typedef struct diskinfo_fat12 {
   int16_t num_heads;
 } diskinfo_fat12;
 
-/*
+/**
  * This structure defines the logical representation of a disk.
- *  @param diskinfo; information about the disk
- *  @param mount_point; the absolute path to the location of the disk
+ * 
+ * @param diskinfo; information about the disk
+ * @param mount_point; the absolute path to the location of the disk
  *
- * TODO Is there anything else really required for the disk information.
+ * @TODO Is there anything else really required for the disk information.
  */
 typedef struct disk_fat12 {
   struct diskinfo_fat12 diskinfo;
   char * mount_point;
 } disk_fat12;
 
-/*
- * This structure defines the logical representation of a file or directory.
+/**
+ * This strucutre defines the logical representation of a
+ * directories contents.
  * 
- * @param name; name of the file/directory
- * @param location; place on the disk
- * @param type; either file '' or directory 'D'
- * @param dir_content; list of files if this is a directory
- * @param bytes; size of file/directory in bytes
- * @param create_date; date file/directory was created
- * @param create_time; time of day file/directory was created
+ * @param files: list of file paths in the directories.
+ * @param count: a count of the number of file paths.
+ */
+typedef struct du_dir_content {
+  char ** files;
+  unsigned int count;
+} du_dir_content;
+
+/**
+ * This structure defines the logical representation of
+ * a file or directory.
+ * 
+ * @param name; name of the file/directory.
+ * @param path; place on the disk.
+ * @param type; either file 'F' or directory 'D'.
+ * @param dir_content; list of files if this is a 
+ *    directory (type == 'D'). Otherwise this is all zeroes.
+ * @param bytes; size of file/directory in bytes.
+ * @param creation_date; date file/directory was created.
+ * @param creation_time; time file/directory was created.
  */
 typedef struct du_file {
-	char * name;
-	char * location;
-	char type;
-	struct du_file * dir_content; // Null if type is 'D'
-	unsigned int bytes;
-	// Creation date
-	// Creation time
+  char * name;
+  char * path;
+  char type;
+  struct du_dir_content dir_content; // Unused if type != 'D'
+  unsigned int bytes;
+  char * creation_date;
+  char * creation_time;
 } du_file;
 
+#define DU_FILE_INITIALIZER {
 
+// Function definitions.
 diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
-
 void print_diskinfo_fat12(disk_fat12 * disk);
-
 disk_fat12 new_disk_fat12(char * file_location);
-
 int diskinfo_freesize_fat12(disk_fat12 * disk);
 int diskinfo_totalfilecount_fat12(disk_fat12 * disk);
 int diskinfo_numfatcopies_fat12(disk_fat12 * disk);
