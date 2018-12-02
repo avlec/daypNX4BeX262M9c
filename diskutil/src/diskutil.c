@@ -5,41 +5,6 @@
 
 #include "diskutil.h"
 
-int q_push(Queue * queue, du_file * file) {
-	QNode * new_node = (QNode *) malloc(sizeof(QNode));
-	if(new_node == NULL) {
-		fprintf(stderr, "Error: malloc.\n");
-		exit(1);
-	}
-
-	if(queue->head == NULL) {
-		queue->head = queue->tail = new_node;
-	} else {
-		queue->tail->next = new_node;
-	}
-	new_node->file = file;
-	return ++queue->length;
-}
-
-du_file * q_pop(Queue * queue) {
-	du_file * file = NULL;
-	if(queue->head != NULL) {
-		file = queue->head->file;
-		QNode * temp = queue->head;
-		queue->head = queue->head->next;
-		free(temp);
-		queue->length--;
-	}
-	return file;
-}
-
-du_file q_peek(Queue * queue) {
-	if(queue->head != NULL)
-		return file = queue->head->file;
-	return NULL;
-}
-
-
 /* This function is responsible for reading the raw data from
  * the character string gathered from the input file and storing
  * it in an intermediate format to process.
@@ -97,6 +62,46 @@ diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data) {
   return diskinfo;
 }
 
+fat_fat12 get_fat_fat12(char * first_raw_fat_data, char * second_raw_fat_data) {
+  fat_fat12 fat;
+  
+  // read 24 bits at a time
+  int8_t byte_1 = 0;
+  int8_t byte_2 = 0;
+  int8_t byte_3 = 0;
+
+
+  // i=1 -> IGNORE FIRST 2
+  // Read 1536 double entries (sets of 3 bytes)
+  // from first fat (3072 total)
+  for(int i = 1; i < 1536; i++) {
+    byte_1 = first_raw_fat_data[i * 3];
+    byte_2 = first_raw_fat_data[(i * 3) + 1];
+    byte_3 = first_raw_fat_data[(i * 3) + 2];
+
+    // Process Little Endianness
+    // NOTE <<<THIS MIGHT NOT WORK>>>
+    fat.entries[i*2] =     ((byte_2 & 0xF0) >> 4 << 8) | ((byte_1 & 0x0F) >> 0 << 4) | ((byte_1 & 0xF0) >> 4 << 0);
+    fat.entries[i*2 + 1] = ((byte_3 * 0x0F) >> 0 << 8) | ((byte_3 & 0xF0) >> 4 << 4) | ((byte_2 & 0x0F) >> 0 << 0);
+  }
+
+  // i=1 -> IGNORE FIRST 2
+  // Read 1536 double entries (sets of 3 bytes)
+  // from first fat (3072 total)
+  for(int i = 1; i < 1536; i++) {
+    byte_1 = second_raw_fat_data[i * 3];
+    byte_2 = second_raw_fat_data[(i * 3) + 1];
+    byte_3 = second_raw_fat_data[(i * 3) + 2];
+
+    // Process Little Endianness
+    // NOTE <<<THIS MIGHT NOT WORK>>>
+    fat.entries[3072 + i*2] =     ((byte_2 & 0xF0) >> 4 << 8) | ((byte_1 & 0x0F) >> 0 << 4) | ((byte_1 & 0xF0) >> 4 << 0);
+    fat.entries[3072 + i*2 + 1] = ((byte_3 * 0x0F) >> 0 << 8) | ((byte_3 & 0xF0) >> 4 << 4) | ((byte_2 & 0x0F) >> 0 << 0);
+  }
+
+  return fat;
+}
+
 void print_diskinfo_fat12(disk_fat12 * disk) {
   printf("OS Name: %s \n" "Boot Signature: %d\n" "Volume ID: %s\n"
 	 "Volume Label: %s\n" "File System Type: %s\n" "Num Heads: %d\n"
@@ -122,24 +127,71 @@ disk_fat12 new_disk_fat12(char * file_location) {
 
   disk_fat12 disk;
   
-  char bootsector_raw_data[62];
-  fread(bootsector_raw_data, sizeof(char), 62, file);
-  disk.diskinfo = get_diskinfo_fat12(bootsector_raw_data);
+  // Read in the boot sector.
+  {
+    char bootsector_raw_data[62];
+    fread(bootsector_raw_data, sizeof(char), 62, file);
+    disk.diskinfo = get_diskinfo_fat12(bootsector_raw_data);
 
-  disk.mount_point = (char *) malloc(sizeof(char) * 128);
-  memcpy(&disk.mount_point, file_location, (strlen(file_location) < 128) ? strlen(file_location)+1 : 128);
+    disk.mount_point = (char *) malloc(sizeof(char) * 128);
+    memcpy(&disk.mount_point, file_location, (strlen(file_location) < 128) ? strlen(file_location)+1 : 128);
+  }
+
+  // Read in the FAT
+  {
+    char * primary_fat =   (char *) malloc(sizeof(char) * disk.diskinfo.bytes_per_sector * 9);
+    char * secondary_fat = (char *) malloc(sizeof(char) * disk.diskinfo.bytes_per_sector * 9);
+    fseek(file, disk.diskinfo.bytes_per_sector, SEEK_SET); // Skip first sector (boot)
+    fread(primary_fat, sizeof(char), disk.diskinfo.bytes_per_sector * 9, file);
+    fread(secondary_fat, sizeof(char), disk.diskinfo.bytes_per_sector * 9, file);
+    disk.fat = get_fat_fat12(primary_fat, secondary_fat);
+    free(primary_fat);
+    free(secondary_fat);
+  }
 
   return disk;
 }
 
 int diskinfo_freesize_fat12(disk_fat12 * disk) {
+  // For each entry in the FAT table.
+  // Count all 0x00 entries
   return -1;
 }
 
 int diskinfo_totalfilecount_fat12(disk_fat12 * disk) {
+  // for each entrie in the root directory
+  //  count++
+  //  if directory, recursively count files in directories
+  //    (excluding '.' and '..')
   return -1;
 }
 
-int diskinfo_numfatcopies_fat12(disk_fat12 * disk) {
+int disk_is_directory(du_file * file) {
+  return (file->attr & 0x10);
+}
+
+void disk_print_file(du_file * file, FILE * stream) {
+  return;
+}
+
+// Individual file retrieval.
+du_file *  disk_file_from_path(char * path, disk_fat12 * disk) {
+  return NULL;
+}
+
+// Getting Directory Listings.
+du_file ** disk_list_from_path(char * path, disk_fat12 * disk) {
+  return NULL;
+}
+
+du_file ** disk_list_from_directory(du_file * file, disk_fat12 * disk) {
+  return NULL;
+}
+
+// Individual file insertion.
+int disk_file_to_path(char * path, disk_fat12 * disk) {
+  return -1;
+}
+int disk_file_to_directory(du_file * file, disk_fat12 * disk) {
   return -1;
 }

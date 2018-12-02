@@ -1,6 +1,7 @@
 #ifndef DISKUTIL_H
 #define DISKUTIL_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 /** 
@@ -56,79 +57,120 @@ typedef struct diskinfo_fat12 {
 } diskinfo_fat12;
 
 /**
+ *  This structure holds information found on the disks FAT sectors.
+ * 
+ *  @param _primary_reserved: holds primary fat's reserved entries
+ *  @param _secondary_reserved: holds secondary fat's reserved entries
+ *  @param entries: this holds all of the entries in the fat table.
+ */
+
+typedef struct fat_fat12 {
+  int16_t _primary_reserved_1;
+  int16_t _primary_reserved_2;
+  int16_t _secondary_reserved_1;
+  int16_t _secondary_reserved_2;
+  int16_t entries[6144]; // TODO allow for undefined number of fat entries
+} fat_fat12;
+
+/**
  * This structure defines the logical representation of a disk.
  * 
  * @param diskinfo; information about the disk
  * @param mount_point; the absolute path to the location of the disk
- *
- * @TODO Is there anything else really required for the disk information.
  */
 typedef struct disk_fat12 {
   struct diskinfo_fat12 diskinfo;
+  struct fat_fat12 fat;
   char * mount_point;
 } disk_fat12;
-
-/**
- * This strucutre defines the logical representation of a
- * directories contents.
- * 
- * @param files: list of file paths in the directories.
- * @param count: a count of the number of file paths.
- */
-typedef struct du_dir_content {
-  char ** files;
-  unsigned int count;
-} du_dir_content;
 
 /**
  * This structure defines the logical representation of
  * a file or directory.
  * 
- * @param name; name of the file/directory.
- * @param path; place on the disk.
- * @param type; either file 'F' or directory 'D'.
- * @param dir_content; list of files if this is a 
- *    directory (type == 'D'). Otherwise this is all zeroes.
- * @param bytes; size of file/directory in bytes.
- * @param creation_date; date file/directory was created.
- * @param creation_time; time file/directory was created.
+ * @param name
+ * @param ext
+ * @param attr
+ * @param reserved
+ * @param creation_tile
+ * @param creation date
+ * @param last_access_date
+ * @param last_write_time
+ * @param last_write_date
+ * @param first_logical_cluster
+ * @param file_size
  */
 typedef struct du_file {
-  char * name;
-  char * path;
-  char type;
-  struct du_dir_content dir_content; // Unused if type != 'D'
-  unsigned int bytes;
-  char * creation_date;
-  char * creation_time;
+  char name[9];
+  char ext[4];
+  int8_t attr;
+  int16_t reserved;
+  int16_t creation_time;
+  int16_t creation_date;
+  int16_t last_access_date;
+  int16_t ignore;
+  int16_t last_write_time;
+  int16_t last_write_date;
+  int16_t first_logical_cluster;
+  int64_t file_size;
 } du_file;
 
-#define DU_FILE_INITIALIZER { .name = NULL, .path = NULL, .type = 'X', .dir_content = { .files = NULL, .count = 0 }, .bytes = 0, .creation_date = NULL, .creation_time = NULL }
-
-typedef struct QNode {
-	struct QNode * next;
-	struct QNode * prev;
-	struct du_file * file;
-} QNode;
-
-typedef struct Queue {
-	struct QNode * head;
-	struct QNode * tail;
-	unsigned int length;
-} Queue;
-
-#define QUEUE_INITIALIZER (Queue) { .head = NULL, .tail = NULL, .length = 0 }
-
-int q_push(Queue * queue, du_file * file);
-du_file * p_pop(Queue * queue);
-du_file * q_peek(Queue * queue);
+#define DU_FILE_INITIALIZER \
+{ .name = NULL, .ext = NULL, .attr = 0, .reserved = 0, \
+.creation_time = 0, .creation_date = 0, .last_access_date = 0, \
+ .ignore = 0, .last_write_time = 0, .last_write_date = 0 \
+ .first_logical_cluster = 0, .file_size = 0 }
 
 // Function definitions.
-diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
-void print_diskinfo_fat12(disk_fat12 * disk);
+
+/**
+ * Used to create the disk object for the programmer to use.
+ */
 disk_fat12 new_disk_fat12(char * file_location);
+
+/**
+ * This function reads the information from the given
+ * copy of the boot sector.
+ */
+diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
+
+/**
+ * This function is used to read information from the given
+ * copy of the FAT sectors.
+ */
+fat_fat12 get_fat_fat12(char * first_raw_fat_data, char * second_raw_fat_data);
+
+/**
+ * Prints disk information.
+ */
+void print_diskinfo_fat12(disk_fat12 * disk);
+
+/**
+ * Used to calc disk metrics.
+ */
 int diskinfo_freesize_fat12(disk_fat12 * disk);
 int diskinfo_totalfilecount_fat12(disk_fat12 * disk);
-int diskinfo_numfatcopies_fat12(disk_fat12 * disk);
+
+int disk_is_directory(du_file * file);
+
+/**
+ * Prints file information.
+ */
+void disk_print_file(du_file * file, FILE * stream);
+
+/**
+ * I/O Operations.
+ */
+
+// Individual file retrieval.
+du_file *  disk_file_from_path(char * path, disk_fat12 * disk);
+
+// Getting Directory Listings.
+du_file ** disk_list_from_path(char * path, disk_fat12 * disk);
+du_file ** disk_list_from_directory(du_file * file, disk_fat12 * disk);
+
+// Individual file insertion.
+int disk_file_to_path(char * path, disk_fat12 * disk);
+int disk_file_to_directory(du_file * file, disk_fat12 * disk);
 
 #endif

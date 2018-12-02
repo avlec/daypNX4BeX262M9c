@@ -21,20 +21,13 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "Invoke with: $ diskutil diskimage.IMA");
     exit(EXIT_FAILURE);
   }
+  
   disk_fat12 disk = new_disk_fat12(argv[1]);
 
   printf(output_format, disk.diskinfo.os_name, disk.diskinfo.vol_label,
 	 disk.diskinfo.bytes_per_sector * disk.diskinfo.total_sector_count,
-	 count_freesize(&disk), count_files(&disk),
+	 diskinfo_freesize_fat12(&disk), diskinfo_totalfilecount_fat12(&disk),
 	 disk.diskinfo.num_fats, disk.diskinfo.sectors_per_fat);
-  
+
   return EXIT_SUCCESS;
-}
-
-unsigned int count_files(disk_fat12 * disk) {
-  return 0;
-}
-
-unsigned int count_freesize(disk_fat12 * disk) {
-  return 0;
 }
