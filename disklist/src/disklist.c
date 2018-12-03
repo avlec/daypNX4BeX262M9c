@@ -3,7 +3,6 @@
 
 #include "disklist.h"
 #include "diskutil.h"
-#include "filequeue.h"
 
 void list_allfiles(disk_fat12 * disk) {
   // list dir/files on root directory

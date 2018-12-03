@@ -184,6 +184,28 @@ du_file ** disk_list_from_path(char * path, disk_fat12 * disk) {
   return NULL;
 }
 
+disk_file_sector_map disk_get_file_sector_map(du_file * file, disk_fat12 * disk) {
+  disk_file_sector_map dfsm;
+
+  dfsm.map = (int16_t *) malloc(sizeof(int16_t) * 64);
+
+  int index = 0;
+  // last <- first FAT entry position from file
+  int16_t fat_index = file->first_logical_cluster;
+  // append last to dfsm
+  dfsm.map[index++] = disk->fat.entries[fat_index];
+
+  // while FAT[ value at last fat position] is valid, 0x000 < x < 0xFF0
+  //  last <- FAT[ value at last fat position]
+  //  append last to dfsm
+
+  return dfsm;
+}
+
+char * disk_get_file_contents(du_file * file) {
+  return NULL;
+}
+
 du_file ** disk_list_from_directory(du_file * file, disk_fat12 * disk) {
   return NULL;
 }
@@ -194,4 +216,28 @@ int disk_file_to_path(char * path, disk_fat12 * disk) {
 }
 int disk_file_to_directory(du_file * file, disk_fat12 * disk) {
   return -1;
+}
+
+disk_file_sector_map disk_file_sector_map_init() {
+  disk_file_sector_map dfsm;
+  dfsm.map = (int16_t *) malloc(sizeof(int16_t) * 64);
+  if(dfsm.map == NULL) {
+    fprintf(stderr, "Error: malloc\n");
+    exit(EXIT_FAILURE);
+  }
+  dfsm.map_max_size = 64;
+  dfsm.map_size = 0;
+  return dfsm;
+}
+
+void add_to_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t sector) {
+  if(dfsm->map_max_size == dfsm->map_size) {
+    dfsm->map_max_size *= 2;
+    dfsm->map = (int16_t *) realloc(dfsm->map, sizeof(int16_t) * dfsm->map_max_size);
+    if(dfsm->map == NULL) {
+      fprintf(stderr, "Error: malloc\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  dfsm->map[dfsm->map_size++] = sector;
 }

@@ -63,7 +63,6 @@ typedef struct diskinfo_fat12 {
  *  @param _secondary_reserved: holds secondary fat's reserved entries
  *  @param entries: this holds all of the entries in the fat table.
  */
-
 typedef struct fat_fat12 {
   int16_t _primary_reserved_1;
   int16_t _primary_reserved_2;
@@ -71,6 +70,26 @@ typedef struct fat_fat12 {
   int16_t _secondary_reserved_2;
   int16_t entries[6144]; // TODO allow for undefined number of fat entries
 } fat_fat12;
+
+
+/**
+ *  This structure holds a map of the sectors that contain the contents
+ *  of a file/directory.
+ * 
+ *  @param map: list of sectors of the file in order
+ *  @param man_size: number of sectors the file consists of.
+ */
+typedef struct disk_file_sector_map {
+  int16_t * map;
+  int16_t map_max_size;
+  int16_t map_size;
+} disk_file_sector_map;
+
+#define DISK_FILE_SECTOR_MAP_INIT { .map = (int16_t) malloc(sizeof(int16_t) * 64), .map_max_size = 64, .map_size = 0 }
+
+disk_file_sector_map disk_file_sector_map_init();
+
+void add_to_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t sector);
 
 /**
  * This structure defines the logical representation of a disk.
