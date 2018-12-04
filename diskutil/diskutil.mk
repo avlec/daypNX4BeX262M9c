@@ -4,11 +4,11 @@ SRCS = $(wildcard src/*.c)
 HDRS = $(wildcard inc/*.h)
 OBJS = $(patsubst src/%.c, %.o, $(SRCS))
 
-$(PROG): $(SRCS)
+$(PROG): $(SRCS) $(HDRS)
 	@mkdir -p ../libs
-	@$(CC) -c -fpic $^ $(CFLAGS) -o $@.o
-	@$(CC) -shared -o ../libs/libdiskutil.so $@.o
-	@rm $@.o
+	@$(foreach var,$(SRCS), $(CC) -c -fpic $(var) $(CFLAGS) -o $(var).o;)
+	$(CC) -shared -o ../libs/libdiskutil.so $(foreach var,$(SRCS), $(var).o)
+	rm $(foreach var, $(SRCS), $(var).o)
 	@echo "    Generate Program $(notdir $(PROG)) from $^"
 
 .PHONY: clean

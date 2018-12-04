@@ -4,37 +4,52 @@
 #include "disklist.h"
 #include "diskutil.h"
 
-void list_allfiles(disk_fat12 * disk) {
-  // list dir/files on root directory
-  du_file * pwd = disk_file_from_path("\\", disk);
-  // pwd execute recursive printing on pwd
-  _r_list_all_files(pwd, disk);
-  free(pwd); // Assuming disk_get allocates new memory
-}
+void read_entries_from_sector(FILE * input, disk_fat12 * disk, int16_t sector) {
+  fseek(input, 512*sector, SEEK_SET); // Skip to data section!
 
-void _r_list_all_files(du_file * pwd, disk_fat12 * disk) {
-  if(!disk_is_directory(pwd)) {
+  char * entry = (char *) malloc(sizeof(char)*32);
+  fread(entry, sizeof(char), 32, input);
+
+  int read_count = 1;
+
+  if(entry[0] == 0xE5)
     return;
-  }
-  // Print Directory Label, and seperator.
-  printf("%s\n"
-	 	"\"==================\"\n",
-		pwd->name);
-	
-  // Get list of files to print.
-  du_file ** result = disk_list_from_directory(pwd, disk);
 
-  // for each file in result, print
-  for(int i = 0; result[i] != NULL; ++i) {
-    disk_print_file(pwd, stdout);
+  while(entry[0] != 0x00) {
+    du_file file = new_du_file(entry, disk);
+    
+    // If it's valid do these things.
+    if(disk_is_file_valid(&file)) {
+      disk_print_file(&file);
+      //disk_print_file(&file);
+      
+      if((file.attr & 0x10) != 0) { // is directory
+        fprintf(stderr, "==================\n");
+        read_entries_from_sector(input, disk, file.first_logical_cluster);
+        fseek(input, (32*read_count) + (512*sector), SEEK_SET);
+        fprintf(stderr, "==\n");
+      }
+    }
+    
+    fread(entry, sizeof(char), 32, input);
+    read_count += 1;
   }
-
-  // for each file in result, recursively branch
-  for(int i = 0; result[i] != NULL; ++i) {
-    _r_list_all_files(result[i], disk);
-  }
+  return;
 }
 
 int main(int argc, char ** argv) {
+  if(argc != 2) {
+    fprintf(stderr, "Invoke with: $ disklist diskimage.IMA");
+    exit(EXIT_FAILURE);
+  }
+
+  disk_fat12 disk = new_disk_fat12(argv[1]);
+
+  FILE * input = fopen(argv[1], "rb");
+  if(input == NULL)
+    fprintf(stderr, "NULL\n");
+
+  read_entries_from_sector(input, &disk, 19);
+
 	return EXIT_SUCCESS;
 }

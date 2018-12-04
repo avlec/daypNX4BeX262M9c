@@ -87,10 +87,6 @@ typedef struct disk_file_sector_map {
 
 #define DISK_FILE_SECTOR_MAP_INIT { .map = (int16_t) malloc(sizeof(int16_t) * 64), .map_max_size = 64, .map_size = 0 }
 
-disk_file_sector_map disk_file_sector_map_init();
-
-void add_to_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t sector);
-
 /**
  * This structure defines the logical representation of a disk.
  * 
@@ -131,14 +127,16 @@ typedef struct du_file {
   int16_t last_write_time;
   int16_t last_write_date;
   int16_t first_logical_cluster;
-  int64_t file_size;
+  int32_t file_size;
+
+  struct disk_file_sector_map dfsm;
 } du_file;
 
-#define DU_FILE_INITIALIZER \
-{ .name = NULL, .ext = NULL, .attr = 0, .reserved = 0, \
-.creation_time = 0, .creation_date = 0, .last_access_date = 0, \
- .ignore = 0, .last_write_time = 0, .last_write_date = 0 \
- .first_logical_cluster = 0, .file_size = 0 }
+#define DU_FILE_INITIALIZER (du_file)\
+  { .name = "FULLINIT", .ext = "NaN", .attr = 0, .reserved = 0, \
+  .creation_time = 0, .creation_date = 0, .last_access_date = 0, \
+  .ignore = 0, .last_write_time = 0, .last_write_date = 0, \
+  .first_logical_cluster = -1, .file_size = 0 }
 
 // Function definitions.
 
@@ -160,6 +158,11 @@ diskinfo_fat12 get_diskinfo_fat12(char * bootsector_raw_data);
 fat_fat12 get_fat_fat12(char * first_raw_fat_data, char * second_raw_fat_data);
 
 /**
+ * 
+ */
+du_file new_du_file(char * raw_file_content, disk_fat12 * disk);
+
+/**
  * Prints disk information.
  */
 void print_diskinfo_fat12(disk_fat12 * disk);
@@ -175,7 +178,9 @@ int disk_is_directory(du_file * file);
 /**
  * Prints file information.
  */
-void disk_print_file(du_file * file, FILE * stream);
+void disk_print_file(du_file * file);
+
+int disk_is_file_valid(du_file * file);
 
 /**
  * I/O Operations.
@@ -191,5 +196,10 @@ du_file ** disk_list_from_directory(du_file * file, disk_fat12 * disk);
 // Individual file insertion.
 int disk_file_to_path(char * path, disk_fat12 * disk);
 int disk_file_to_directory(du_file * file, disk_fat12 * disk);
+
+// DFSM functions
+disk_file_sector_map disk_file_sector_map_init();
+int fill_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t first_logical_cluster, disk_fat12 * disk);
+void add_to_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t sector);
 
 #endif
