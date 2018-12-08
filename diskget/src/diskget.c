@@ -59,6 +59,10 @@ du_file r_disk_file_from_path(char * token, FILE * input, disk_fat12 * disk, int
 	du_file file = DU_FILE_INITIALIZER;
 	fseek(input, 512*sector, SEEK_SET);
 	char * entry = (char *) malloc(sizeof(char) * 32);
+	if(entry == NULL) {
+		fprintf(stderr, "Error allocating memory, exiting.\n");
+		exit(1);
+	}
 	fread(entry, sizeof(char), 32, input);
 
 	if(entry[0] == 0xE5) {
@@ -125,7 +129,7 @@ void write_file_contents(du_file * file, disk_fat12 * disk, char * file_location
 	
 	char * buffer = (char *) malloc(sizeof(char) * 512);
 	if(buffer == NULL) {
-		fprintf(stderr, "Error malloc\n");
+		fprintf(stderr, "Error allocating memory, exiting.\n");
 		exit(1);
 	}
 

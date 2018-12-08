@@ -10,6 +10,10 @@ disk_file_sector_map disk_get_file_sector_map(du_file * file, disk_fat12 * disk)
   disk_file_sector_map dfsm;
 
   dfsm.map = (int16_t *) malloc(sizeof(int16_t) * 64);
+  if(dfsm.map == NULL) {
+		fprintf(stderr, "Error allocating memory, exiting.\n");
+		exit(1);
+	}
 
   int index = 0;
   // last <- first FAT entry position from file
@@ -28,7 +32,7 @@ disk_file_sector_map disk_file_sector_map_init() {
   disk_file_sector_map dfsm;
   dfsm.map = (int16_t *) malloc(sizeof(int16_t) * 64);
   if(dfsm.map == NULL) {
-    fprintf(stderr, "Error: malloc\n");
+    fprintf(stderr, "Error allocating memory, exiting.\n");
     exit(EXIT_FAILURE);
   }
   dfsm.map_max_size = 64;
@@ -41,8 +45,8 @@ void add_to_disk_file_sector_map(disk_file_sector_map * dfsm, int16_t sector) {
     dfsm->map_max_size *= 2;
     dfsm->map = (int16_t *) realloc(dfsm->map, sizeof(int16_t) * dfsm->map_max_size);
     if(dfsm->map == NULL) {
-      fprintf(stderr, "Error: malloc\n");
-      exit(EXIT_FAILURE);
+      fprintf(stderr, "Error allocating memory, exiting.\n");
+      exit(1);
     }
   }
   dfsm->map[dfsm->map_size++] = sector;

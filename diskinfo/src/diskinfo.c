@@ -19,6 +19,10 @@ int count_entries_from_sector(FILE * input, disk_fat12 * disk, int16_t sector) {
   
   fseek(input, 512*sector, SEEK_SET); // Skip to data section!
   char * entry = (char *) malloc(sizeof(char)*32);
+  if(entry == NULL) {
+		fprintf(stderr, "Error allocating memory, exiting.\n");
+		exit(1);
+	}
   fread(entry, sizeof(char), 32, input);
   int read_count = 1;
 
@@ -60,6 +64,10 @@ int main(int argc, char ** argv) {
   disk_fat12 disk = new_disk_fat12(argv[1]);
 
   FILE * input = fopen(argv[1], "rb");
+  if(input == NULL) {
+    fprintf(stderr, "Error opening file.\n");
+    exit(1);
+  }
 
   printf(output_format, disk.diskinfo.os_name, disk.diskinfo.vol_label,
 	  disk.diskinfo.bytes_per_sector * disk.diskinfo.total_sector_count,

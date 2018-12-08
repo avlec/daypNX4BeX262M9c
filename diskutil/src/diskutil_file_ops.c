@@ -18,6 +18,10 @@ du_file ** disk_list_from_path(char * path, disk_fat12 * disk) {
   char * token = strtok(path, delim);
 
   du_file ** ret = (du_file **) malloc(sizeof(du_file *) * 2048);
+  if(ret == NULL) {
+		fprintf(stderr, "Error allocating memory, exiting.\n");
+		exit(1);
+	}
 
   while(token != NULL) {
     
