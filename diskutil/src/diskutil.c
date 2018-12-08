@@ -9,7 +9,7 @@ disk_fat12 new_disk_fat12(char * file_location) {
   disk_fat12 disk;
 
   disk.mount_point = (char *) malloc(sizeof(char) * 128);
-  memcpy(disk.mount_point, file_location, 9);
+  memcpy(disk.mount_point, file_location, (strlen(file_location) < 128) ? strlen(file_location) : 128);
   
   FILE * input = fopen(disk.mount_point, "rb");
   if(input == NULL) {

@@ -57,35 +57,36 @@ du_file r_disk_file_from_path(char * token, FILE * input, disk_fat12 * disk, int
 	convert_token(token, name, ext);
 
 	du_file file = DU_FILE_INITIALIZER;
-	fprintf(stderr, "Made it\n");
 	fseek(input, 512*sector, SEEK_SET);
-	fprintf(stderr, "Made it\n");
 	char * entry = (char *) malloc(sizeof(char) * 32);
 	fread(entry, sizeof(char), 32, input);
 
-	if(entry[0] == 0xE5)
+	if(entry[0] == 0xE5) {
+		fclose(input);
 		return file;
+	}
 
-	fprintf(stderr, "looking for [%s.%s]\n", name, ext);
+	// DEBUG fprintf(stderr, "looking for [%s.%s]\n", name, ext);
 
 	while(entry[0] != 0x00) {
-		fprintf(stderr, "F ");
 		file = new_du_file(entry, disk);
-		
-		fprintf(stderr, " checking [%s.%s]\n", file.name, file.ext);
-		
+
+		// DEBUG fprintf(stderr, "checking [%s.%s]\n", name, ext);
+
 		if(disk_is_file_valid(&file)) {
-			if(strncmp(file.name, name, 8) == 0) {
-				if(strncmp(file.ext, ext, 3) == 0) {
+			if(strncmp(file.name, name, (strlen(file.name) < 8) ? strlen(file.name) : 8) == 0) {
+				if(strncmp(file.ext, ext, (strlen(file.ext) < 3)  ? strlen(file.name) : 3) == 0) {
 					// Found first part of string
 					token = strtok(NULL, delim);
-					if(token == NULL) {
-						fprintf(stderr, "EEE");
-						return file;
-					}
 					if((file.attr & 0x10) != 0) {
 						// Directory
+						fclose(input);
 						return r_disk_file_from_path(token, input, disk, file.first_logical_cluster);
+					}
+					if(token == NULL) {
+						// Found!
+						fclose(input);
+						return file;
 					}
 				}
 			}
@@ -93,6 +94,7 @@ du_file r_disk_file_from_path(char * token, FILE * input, disk_fat12 * disk, int
 		fread(entry, sizeof(char), 32, input);
 	}
 	file = DU_FILE_INITIALIZER;
+	fclose(input);
 	return file;
 }
 
@@ -105,7 +107,6 @@ du_file disk_file_from_path(char * path, disk_fat12 * disk) {
 		perror("Error: ");
 		exit(1);
 	}
-
   return r_disk_file_from_path(token, input, disk, 19);
 }
 
@@ -133,6 +134,9 @@ void write_file_contents(du_file * file, disk_fat12 * disk, char * file_location
 		fread(buffer, sizeof(char), 512, input);
 		fwrite(buffer, sizeof(char), 512, output);
 	}
+
+	fclose(input);
+	fclose(output);
 }
 
 int main(int argc, char ** argv) {
@@ -143,10 +147,11 @@ int main(int argc, char ** argv) {
 
 	disk_fat12 disk = new_disk_fat12(argv[1]);
 	du_file file = disk_file_from_path(argv[2], &disk);
-	
-	print_du_file(&file);
 
+	if(!disk_is_file_valid(&file)) {
+		fprintf(stderr, "File not found at path specified.\n");
+		return EXIT_FAILURE;
+	}
 	write_file_contents(&file, &disk, argv[2]);
-
 	return EXIT_SUCCESS;
 }
