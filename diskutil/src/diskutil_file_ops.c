@@ -8,20 +8,6 @@ int disk_is_directory(du_file * file) {
 }
 
 
-// Individual file retrieval.
-du_file *  disk_file_from_path(char * path, disk_fat12 * disk) {
-  du_file * ret = (du_file *) malloc(sizeof(du_file));
-  
-  const char * delim = "/";
-  char * token = strtok(path, delim);
-
-  while(token != NULL) {
-
-  }
-
-  return ret;
-}
-
 char * disk_get_file_contents(du_file * file) {
   return NULL;
 }

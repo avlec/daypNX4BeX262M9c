@@ -168,17 +168,10 @@ du_file new_du_file(char * raw_file_content, disk_fat12 * disk);
 void print_diskinfo_fat12(disk_fat12 * disk);
 
 /**
- * Used to calc disk metrics.
- */
-int diskinfo_freesize_fat12(disk_fat12 * disk);
-int diskinfo_totalfilecount_fat12(disk_fat12 * disk);
-
-int disk_is_directory(du_file * file);
-
-/**
  * Prints file information.
  */
 void disk_print_file(du_file * file);
+void print_du_file(du_file * file);
 
 int disk_is_file_valid(du_file * file);
 
@@ -187,7 +180,7 @@ int disk_is_file_valid(du_file * file);
  */
 
 // Individual file retrieval.
-du_file *  disk_file_from_path(char * path, disk_fat12 * disk);
+du_file disk_file_from_path(char * path, disk_fat12 * disk);
 
 // Getting Directory Listings.
 du_file ** disk_list_from_path(char * path, disk_fat12 * disk);

@@ -41,11 +41,19 @@ int count_entries_from_sector(FILE * input, disk_fat12 * disk, int16_t sector) {
     read_count += 1;
   }
   return file_count;
-}  
+}
+
+int diskinfo_freesize_fat12(disk_fat12 * disk) {
+  int count = 0;
+  for(int i = 0; i < disk->diskinfo.total_sector_count; ++i)
+    if(disk->fat.entries[i] == 0)
+      ++count;
+  return count;
+}
 
 int main(int argc, char ** argv) {
   if(argc != 2) {
-    fprintf(stderr, "Invoke with: $ diskutil diskimage.IMA");
+    fprintf(stderr, "Invoke with: $ diskinfo diskimage.IMA");
     exit(EXIT_FAILURE);
   }
   
