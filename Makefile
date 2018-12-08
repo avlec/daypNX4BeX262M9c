@@ -26,6 +26,7 @@ LIBS :=
 CFLAGS :=
 CFLAGS += $(INC_SRCH_PATH) $(LIB_SRCH_PATH) 
 CFLAGS += -Wall -g -Wall -Werror -ldiskutil
+CFLAGS += -std=gnu99 -fno-stack-protector
 CFLAGS += -DDEBUG -D_REENTRANT
 
 LDFLAGS :=

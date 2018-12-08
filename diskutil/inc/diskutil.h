@@ -85,7 +85,7 @@ typedef struct disk_file_sector_map {
   int16_t map_size;
 } disk_file_sector_map;
 
-#define DISK_FILE_SECTOR_MAP_INIT { .map = (int16_t) malloc(sizeof(int16_t) * 64), .map_max_size = 64, .map_size = 0 }
+#define DISK_FILE_SECTOR_MAP_INIT { .map = (int16_t *) malloc(sizeof(int16_t) * 64), .map_max_size = 64, .map_size = 0 }
 
 /**
  * This structure defines the logical representation of a disk.
