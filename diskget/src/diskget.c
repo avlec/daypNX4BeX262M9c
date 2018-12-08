@@ -141,7 +141,7 @@ void write_file_contents(du_file * file, disk_fat12 * disk, char * file_location
 
 int main(int argc, char ** argv) {
 	if(argc != 3) {
-    fprintf(stderr, "Invoke with: $ diskget diskimage.IMA file/path/to/file.ext");
+    fprintf(stderr, "Invoke with: $ diskget diskimage.IMA filename.ext\n");
     exit(EXIT_FAILURE);
   }
 
